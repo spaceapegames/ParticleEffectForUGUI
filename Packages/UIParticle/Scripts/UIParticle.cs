@@ -387,6 +387,10 @@ namespace Coffee.UIExtensions
                         return;
                     }
 
+                    // #61: When ParticleSystem.RenderMode=None, an error occurs
+                    if (_renderer.renderMode == ParticleSystemRenderMode.None)
+                        return;
+
                     Profiler.BeginSample("Make Matrix");
                     ParticleSystem.MainModule main = m_ParticleSystem.main;
                     scaleaMatrix = main.scalingMode == ParticleSystemScalingMode.Hierarchy

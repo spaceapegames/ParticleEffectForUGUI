@@ -35,3 +35,6 @@ sysinfo.txt
 # Packages
 .vs
 node_modules
+.idea
+Assets/Plugins.meta
+Assets/Plugins

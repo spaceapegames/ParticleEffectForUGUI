@@ -1,11 +1,11 @@
-﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
-using UnityEngine.Rendering;
 using UnityEngine.UI;
 using ShaderPropertyType = Coffee.UIExtensions.UIParticle.AnimatableProperty.ShaderPropertyType;
-
+#if UNITY_EDITOR
+using System.Reflection;
+#endif
 
 namespace Coffee.UIExtensions
 {
@@ -90,9 +90,7 @@ namespace Coffee.UIExtensions
                     var textureSheet = cachedParticleSystem.textureSheetAnimation;
                     if (textureSheet.enabled && textureSheet.mode == ParticleSystemAnimationMode.Sprites && 0 < textureSheet.spriteCount)
                     {
-                        var sprite = textureSheet.GetSprite(0);
-                        textureSheet.uvChannelMask = (UVChannelFlags) (sprite && sprite.packed ? -1 : 0);
-                        tex = sprite ? sprite.texture : null;
+                        tex = GetActualTexture(textureSheet.GetSprite(0));
                     }
                     Profiler.EndSample();
                 }
@@ -607,5 +605,24 @@ namespace Coffee.UIExtensions
                 }
             }
         }
+
+#if UNITY_EDITOR
+        private static MethodInfo miGetActiveAtlasTexture = typeof(UnityEditor.Experimental.U2D.SpriteEditorExtension)
+            .GetMethod("GetActiveAtlasTexture", BindingFlags.Static | BindingFlags.NonPublic);
+
+        static Texture2D GetActualTexture(Sprite sprite)
+        {
+            if (!sprite) return null;
+
+            if (Application.isPlaying) return sprite.texture;
+            var ret = miGetActiveAtlasTexture.Invoke(null, new[] {sprite}) as Texture2D;
+            return ret ? ret : sprite.texture;
+        }
+#else
+        static Texture2D GetActualTexture(Sprite sprite)
+        {
+            return sprite ? sprite.texture : null;
+        }
+#endif
     }
 }

@@ -6,11 +6,13 @@ on:
       - preview
       - master
       - v*.x
+    tags-ignore:
+      - "**"
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
-    if: "! contains(github.event.head_commit.message, '[ci skip]')"
+    if: "! contains(github.event.head_commit.message, '[skip ci]') && ! contains(github.event.head_commit.message, '[ci skip]')"
     steps:
       - run: echo "${{ github.event.head_commit.message }}"
 

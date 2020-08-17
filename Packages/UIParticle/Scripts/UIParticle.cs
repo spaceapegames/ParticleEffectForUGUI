@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.UI;
-using ShaderPropertyType = Coffee.UIExtensions.UIParticle.AnimatableProperty.ShaderPropertyType;
 #if UNITY_EDITOR
 using System;
 using System.Reflection;
@@ -48,38 +47,6 @@ namespace Coffee.UIExtensions
         AnimatableProperty[] m_AnimatableProperties = new AnimatableProperty[0];
 
         static MaterialPropertyBlock s_Mpb;
-
-        [System.Serializable]
-        public class AnimatableProperty : ISerializationCallbackReceiver
-        {
-            public enum ShaderPropertyType
-            {
-                Color,
-                Vector,
-                Float,
-                Range,
-                Texture,
-            };
-
-            [SerializeField] string m_Name = "";
-            [SerializeField] ShaderPropertyType m_Type = ShaderPropertyType.Vector;
-            public int id { get; private set; }
-
-            public ShaderPropertyType type
-            {
-                get { return m_Type; }
-            }
-
-
-            public void OnBeforeSerialize()
-            {
-            }
-
-            public void OnAfterDeserialize()
-            {
-                id = Shader.PropertyToID(m_Name);
-            }
-        }
 
 
         //################################
@@ -618,27 +585,12 @@ namespace Coffee.UIExtensions
                 return;
 
             _renderer.GetPropertyBlock(s_Mpb);
-            for (int i = 0; i < canvasRenderer.materialCount; i++)
+            for (var i = 0; i < canvasRenderer.materialCount; i++)
             {
                 var mat = canvasRenderer.GetMaterial(i);
                 foreach (var ap in m_AnimatableProperties)
                 {
-                    switch (ap.type)
-                    {
-                        case ShaderPropertyType.Color:
-                            mat.SetColor(ap.id, s_Mpb.GetColor(ap.id));
-                            break;
-                        case ShaderPropertyType.Vector:
-                            mat.SetVector(ap.id, s_Mpb.GetVector(ap.id));
-                            break;
-                        case ShaderPropertyType.Float:
-                        case ShaderPropertyType.Range:
-                            mat.SetFloat(ap.id, s_Mpb.GetFloat(ap.id));
-                            break;
-                        case ShaderPropertyType.Texture:
-                            mat.SetTexture(ap.id, s_Mpb.GetTexture(ap.id));
-                            break;
-                    }
+                    ap.UpdateMaterialProperties(mat, s_Mpb);
                 }
             }
         }

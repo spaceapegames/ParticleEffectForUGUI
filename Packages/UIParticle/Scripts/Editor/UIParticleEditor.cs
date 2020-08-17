@@ -5,7 +5,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System;
-using ShaderPropertyType = Coffee.UIExtensions.UIParticle.AnimatableProperty.ShaderPropertyType;
+using ShaderPropertyType = Coffee.UIExtensions.AnimatableProperty.ShaderPropertyType;
 
 namespace Coffee.UIExtensions
 {

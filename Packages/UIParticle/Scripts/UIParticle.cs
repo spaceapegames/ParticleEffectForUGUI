@@ -578,20 +578,18 @@ namespace Coffee.UIExtensions
         void UpdateAnimatableMaterialProperties()
         {
 #if UNITY_EDITOR
-            if (!Application.isPlaying)
-                return;
+            if (!Application.isPlaying) return;
 #endif
-            if (0 == m_AnimatableProperties.Length)
-                return;
+            if (0 == m_AnimatableProperties.Length) return;
+            if (0 == canvasRenderer.materialCount) return;
+
+            var mat = canvasRenderer.GetMaterial(0);
+            if (!mat) return;
 
             _renderer.GetPropertyBlock(s_Mpb);
-            for (var i = 0; i < canvasRenderer.materialCount; i++)
+            foreach (var ap in m_AnimatableProperties)
             {
-                var mat = canvasRenderer.GetMaterial(i);
-                foreach (var ap in m_AnimatableProperties)
-                {
-                    ap.UpdateMaterialProperties(mat, s_Mpb);
-                }
+                ap.UpdateMaterialProperties(mat, s_Mpb);
             }
         }
 

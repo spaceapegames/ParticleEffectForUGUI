@@ -63,7 +63,7 @@ namespace Coffee.UIExtensions
                     var textureSheet = cachedParticleSystem.textureSheetAnimation;
                     if (textureSheet.enabled && textureSheet.mode == ParticleSystemAnimationMode.Sprites && 0 < textureSheet.spriteCount)
                     {
-                        tex = GetActualTexture(textureSheet.GetSprite(0));
+                        tex = textureSheet.GetSprite(0).GetActualTexture();
                     }
 
                     Profiler.EndSample();
@@ -592,26 +592,5 @@ namespace Coffee.UIExtensions
                 ap.UpdateMaterialProperties(mat, s_Mpb);
             }
         }
-
-#if UNITY_EDITOR
-        private static Type tSpriteEditorExtension = Type.GetType("UnityEditor.Experimental.U2D.SpriteEditorExtension, UnityEditor")
-                                                     ?? Type.GetType("UnityEditor.U2D.SpriteEditorExtension, UnityEditor");
-        private static MethodInfo miGetActiveAtlasTexture = tSpriteEditorExtension
-            .GetMethod("GetActiveAtlasTexture", BindingFlags.Static | BindingFlags.NonPublic);
-
-        static Texture2D GetActualTexture(Sprite sprite)
-        {
-            if (!sprite) return null;
-
-            if (Application.isPlaying) return sprite.texture;
-            var ret = miGetActiveAtlasTexture.Invoke(null, new[] {sprite}) as Texture2D;
-            return ret ? ret : sprite.texture;
-        }
-#else
-        static Texture2D GetActualTexture(Sprite sprite)
-        {
-            return sprite ? sprite.texture : null;
-        }
-#endif
     }
 }

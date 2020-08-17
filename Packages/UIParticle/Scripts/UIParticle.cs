@@ -21,10 +21,10 @@ namespace Coffee.UIExtensions
         // Constant or Readonly Static Members.
         //################################
         static readonly int s_IdMainTex = Shader.PropertyToID("_MainTex");
-        static readonly List<Vector3> s_Vertices = new List<Vector3>();
         static readonly List<Color32> s_Colors = new List<Color32>();
         static readonly List<UIParticle> s_TempRelatables = new List<UIParticle>();
         static readonly List<UIParticle> s_ActiveParticles = new List<UIParticle>();
+        static readonly CombineInstance[] s_CombineInstances = new CombineInstance[1];
 
 
         //################################
@@ -226,6 +226,9 @@ namespace Coffee.UIExtensions
             {
                 Canvas.willRenderCanvases += UpdateMeshes;
                 s_Mpb = new MaterialPropertyBlock();
+
+                s_CombineInstances[0].mesh = new Mesh();
+                s_CombineInstances[0].mesh.MarkDynamic();
             }
 
             s_ActiveParticles.Add(this);
@@ -496,11 +499,11 @@ namespace Coffee.UIExtensions
 
                         if (m_IsTrail)
                         {
-                            _renderer.BakeTrailsMesh(_mesh, cam, true);
+                            _renderer.BakeTrailsMesh(s_CombineInstances[0].mesh, cam, true);
                         }
                         else
                         {
-                            _renderer.BakeMesh(_mesh, cam, true);
+                            _renderer.BakeMesh(s_CombineInstances[0].mesh, cam, true);
                         }
 
                         Profiler.EndSample();
@@ -510,27 +513,19 @@ namespace Coffee.UIExtensions
 
                         if (QualitySettings.activeColorSpace == ColorSpace.Linear)
                         {
-                            _mesh.GetColors(s_Colors);
+                            s_CombineInstances[0].mesh.GetColors(s_Colors);
                             var count_c = s_Colors.Count;
                             for (int i = 0; i < count_c; i++)
                             {
                                 s_Colors[i] = ((Color) s_Colors[i]).gamma;
                             }
 
-                            _mesh.SetColors(s_Colors);
+                            s_CombineInstances[0].mesh.SetColors(s_Colors);
                         }
 
-                        _mesh.GetVertices(s_Vertices);
-                        var count = s_Vertices.Count;
-                        for (int i = 0; i < count; i++)
-                        {
-                            s_Vertices[i] = matrix.MultiplyPoint3x4(s_Vertices[i]);
-                        }
-
-                        _mesh.SetVertices(s_Vertices);
-                        _mesh.RecalculateBounds();
-                        s_Vertices.Clear();
                         s_Colors.Clear();
+                        s_CombineInstances[0].transform = matrix;
+                        _mesh.CombineMeshes(s_CombineInstances);
                         Profiler.EndSample();
                     }
 

@@ -362,7 +362,7 @@ namespace Coffee.UIExtensions
         ParticleSystemRenderer _renderer;
         UIParticle _parent;
         List<UIParticle> _children = new List<UIParticle>();
-        Matrix4x4 scaleaMatrix = default(Matrix4x4);
+        Matrix4x4 scaledMatrix = default(Matrix4x4);
         Vector3 _oldPos;
         static readonly Vector3 minimumVec3 = new Vector3(0.0000001f, 0.0000001f, 0.0000001f);
         static ParticleSystem.Particle[] s_Particles = new ParticleSystem.Particle[4096];
@@ -415,7 +415,7 @@ namespace Coffee.UIExtensions
 
                     Profiler.BeginSample("Make Matrix");
                     ParticleSystem.MainModule main = m_ParticleSystem.main;
-                    scaleaMatrix = main.scalingMode == ParticleSystemScalingMode.Hierarchy
+                    scaledMatrix = main.scalingMode == ParticleSystemScalingMode.Hierarchy
                         ? Matrix4x4.Scale(scale * Vector3.one)
                         : Matrix4x4.Scale(scale * rootCanvas.transform.localScale);
                     Matrix4x4 matrix = default(Matrix4x4);
@@ -423,13 +423,13 @@ namespace Coffee.UIExtensions
                     {
                         case ParticleSystemSimulationSpace.Local:
                             matrix =
-                                scaleaMatrix
+                                scaledMatrix
                                 * Matrix4x4.Rotate(rectTransform.rotation).inverse
                                 * Matrix4x4.Scale(rectTransform.lossyScale + minimumVec3).inverse;
                             break;
                         case ParticleSystemSimulationSpace.World:
                             matrix =
-                                scaleaMatrix
+                                scaledMatrix
                                 * rectTransform.worldToLocalMatrix;
 
                             bool isLocalScaling = main.scalingMode == ParticleSystemScalingMode.Local;

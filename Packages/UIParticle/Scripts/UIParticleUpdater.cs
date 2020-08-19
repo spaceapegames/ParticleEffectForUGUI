@@ -138,6 +138,10 @@ namespace Coffee.UIExtensions
                            * Matrix4x4.Scale(canvasTr.localScale).inverse;
                 case ParticleSystemSimulationSpace.World:
                     return transform.worldToLocalMatrix;
+                case ParticleSystemSimulationSpace.Custom:
+                    // #78: Support custom simulation space.
+                    return transform.worldToLocalMatrix
+                           * Matrix4x4.Translate(main.customSimulationSpace.position);
                 default:
                     return Matrix4x4.identity;
             }

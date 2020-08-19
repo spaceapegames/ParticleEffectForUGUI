@@ -1,4 +1,3 @@
-#if IGNORE_ACCESS_CHECKS // [ASMDEFEX] DO NOT REMOVE THIS LINE MANUALLY.
 #if !UNITY_2019_1_OR_NEWER
 using System.IO;
 using System.Text.RegularExpressions;
@@ -59,4 +58,3 @@ namespace Coffee.UIExtensions
     }
 }
 #endif
-#endif // [ASMDEFEX] DO NOT REMOVE THIS LINE MANUALLY.

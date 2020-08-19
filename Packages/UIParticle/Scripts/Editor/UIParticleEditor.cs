@@ -1,4 +1,3 @@
-#if IGNORE_ACCESS_CHECKS // [ASMDEFEX] DO NOT REMOVE THIS LINE MANUALLY.
 using UnityEditor;
 using UnityEditor.UI;
 using UnityEngine;
@@ -300,4 +299,3 @@ namespace Coffee.UIExtensions
         }
     }
 }
-#endif // [ASMDEFEX] DO NOT REMOVE THIS LINE MANUALLY.

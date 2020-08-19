@@ -201,6 +201,8 @@ namespace Coffee.UIExtensions
         /// </summary>
         protected override void OnEnable()
         {
+            UpdateVersionIfNeeded();
+
             _tracker.Add(this, rectTransform, DrivenTransformProperties.Scale);
 
             // Initialize.
@@ -326,6 +328,18 @@ namespace Coffee.UIExtensions
 
             if (matChanged || matChanged2 || modeChanged)
                 SetMaterialDirty();
+        }
+
+        private void UpdateVersionIfNeeded()
+        {
+            if (Mathf.Approximately(m_Scale, 0)) return;
+
+            var parent = GetComponentInParent<UIParticle>();
+            if (m_IgnoreParent || !parent)
+                scale3D = m_Scale * transform.localScale;
+            else
+                scale3D = transform.localScale;
+            m_Scale = 0;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace Coffee.UIExtensions
 #if !UNITY_2019_1_OR_NEWER
         static string GetPreviousSamplePath(string displayName, string sampleName)
         {
-            string sampleRoot = $"Assets/Samples/{displayName}";
+            string sampleRoot = string.Format("Assets/Samples/{0}", displayName);
             var sampleRootInfo = new DirectoryInfo(sampleRoot);
             if (!sampleRootInfo.Exists) return null;
 
@@ -27,12 +27,12 @@ namespace Coffee.UIExtensions
 
         static void ImportSample(string packageName, string sampleName)
         {
-            string jsonPath = $"Packages/{packageName}/package.json";
+            string jsonPath = string.Format("Packages/{0}/package.json", packageName);
             string json = File.ReadAllText(jsonPath);
             string version = Regex.Match(json, "\"version\"\\s*:\\s*\"([^\"]+)\"").Groups[1].Value;
             string displayName = Regex.Match(json, "\"displayName\"\\s*:\\s*\"([^\"]+)\"").Groups[1].Value;
-            string src = $"{Path.GetDirectoryName(jsonPath)}/Samples~/{sampleName}";
-            string dst = $"Assets/Samples/{displayName}/{version}/{sampleName}";
+            string src = string.Format("{0}/Samples~/{1}", Path.GetDirectoryName(jsonPath), sampleName);
+            string dst = string.Format("Assets/Samples/{0}/{1}/{2}", displayName, version, sampleName);
             string previous = GetPreviousSamplePath(displayName, sampleName);
 
             if (!string.IsNullOrEmpty(previous))
@@ -43,11 +43,19 @@ namespace Coffee.UIExtensions
                 if (!EditorUtility.DisplayDialog("Sample Importer", msg, "OK", "Cancel"))
                     return;
 
-                FileUtil.DeleteFileOrDirectory(previous);
                 FileUtil.DeleteFileOrDirectory(previous + ".meta");
+                FileUtil.DeleteFileOrDirectory(previous);
+
+                string versionDir = Path.GetDirectoryName(previous);
+                if (Directory.GetFiles(versionDir, "*.meta", SearchOption.TopDirectoryOnly).Length == 0)
+                {
+                    FileUtil.DeleteFileOrDirectory(versionDir + ".meta");
+                    FileUtil.DeleteFileOrDirectory(versionDir);
+                }
             }
 
-            FileUtil.CopyDirectoryRecursive(src, dst);
+            Directory.CreateDirectory(Path.GetDirectoryName(dst));
+            FileUtil.CopyFileOrDirectory(src, dst);
             AssetDatabase.ImportAsset(dst, ImportAssetOptions.ImportRecursive);
         }
 

@@ -22,6 +22,9 @@ namespace Coffee.UIExtensions
 
         [HideInInspector] [SerializeField] bool m_IsTrail = false;
 
+        [Tooltip("Ignore canvas scaler")] [SerializeField]
+        bool m_IgnoreCanvasScaler = false;
+
         [Tooltip("Ignore parent scale")] [SerializeField]
         bool m_IgnoreParent = false;
 
@@ -68,6 +71,12 @@ namespace Coffee.UIExtensions
         internal ParticleSystemRenderer cachedRenderer
         {
             get { return _renderer; }
+        }
+
+        public bool ignoreCanvasScaler
+        {
+            get { return m_IgnoreCanvasScaler; }
+            set { m_IgnoreCanvasScaler = value; }
         }
 
         /// <summary>

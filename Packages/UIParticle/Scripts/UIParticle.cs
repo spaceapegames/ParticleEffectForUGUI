@@ -31,6 +31,9 @@ namespace Coffee.UIExtensions
         [Tooltip("Animatable material properties. If you want to change the material properties of the ParticleSystem in Animation, enable it.")] [SerializeField]
         internal AnimatableProperty[] m_AnimatableProperties = new AnimatableProperty[0];
 
+        [Tooltip("Particle effect scale")] [SerializeField]
+        internal Vector3 m_Scale3D = Vector3.one;
+
         private readonly Material[] _maskMaterials = new Material[2];
         private DrivenRectTransformTracker _tracker;
         private Mesh _bakedMesh;
@@ -72,8 +75,17 @@ namespace Coffee.UIExtensions
         /// </summary>
         public float scale
         {
-            get { return m_Scale; }
-            set { m_Scale = value; }
+            get { return m_Scale3D.x; }
+            set { m_Scale3D.Set(value, value, value); }
+        }
+
+        /// <summary>
+        /// Particle effect scale.
+        /// </summary>
+        public Vector3 scale3D
+        {
+            get { return m_Scale3D; }
+            set { m_Scale3D = value; }
         }
 
         internal bool isTrailParticle

@@ -16,6 +16,8 @@ namespace Coffee.UIExtensions
         private static readonly GUIContent s_ContentParticleMaterial = new GUIContent("Particle Material", "The material for rendering particles");
         private static readonly GUIContent s_ContentTrailMaterial = new GUIContent("Trail Material", "The material for rendering particle trails");
         private static readonly GUIContent s_ContentAdvancedOptions = new GUIContent("Advanced Options");
+        private static readonly GUIContent s_Content3D = new GUIContent("3D");
+        private static readonly GUIContent s_ContentScale = new GUIContent("Scale");
         private static readonly List<ParticleSystem> s_ParticleSystems = new List<ParticleSystem>();
 
         private SerializedProperty _spParticleSystem;
@@ -97,6 +99,8 @@ namespace Coffee.UIExtensions
             EditorGUILayout.Space();
             EditorGUILayout.LabelField(s_ContentAdvancedOptions, EditorStyles.boldLabel);
 
+            _xyzMode = DrawFloatOrVector3Field(_spScale3D, _xyzMode);
+
             EditorGUILayout.PropertyField(_spIgnoreCanvasScaler);
 
             // AnimatableProperties
@@ -138,6 +142,39 @@ namespace Coffee.UIExtensions
             }
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private static bool DrawFloatOrVector3Field(SerializedProperty sp, bool showXyz)
+        {
+            var x = sp.FindPropertyRelative("x");
+            var y = sp.FindPropertyRelative("y");
+            var z = sp.FindPropertyRelative("z");
+
+            showXyz |= !Mathf.Approximately(x.floatValue, y.floatValue) ||
+                       !Mathf.Approximately(y.floatValue, z.floatValue) ||
+                       y.hasMultipleDifferentValues ||
+                       z.hasMultipleDifferentValues;
+
+            EditorGUILayout.BeginHorizontal();
+            if (showXyz)
+            {
+                EditorGUILayout.PropertyField(sp);
+            }
+            else
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(x, s_ContentScale);
+                if (EditorGUI.EndChangeCheck())
+                    z.floatValue = y.floatValue = x.floatValue;
+            }
+
+            EditorGUI.BeginChangeCheck();
+            showXyz = GUILayout.Toggle(showXyz, s_Content3D, EditorStyles.miniButton, GUILayout.Width(30));
+            if (EditorGUI.EndChangeCheck() && !showXyz)
+                z.floatValue = y.floatValue = x.floatValue;
+            EditorGUILayout.EndHorizontal();
+
+            return showXyz;
         }
     }
 }

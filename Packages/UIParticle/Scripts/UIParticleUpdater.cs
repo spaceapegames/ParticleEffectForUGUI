@@ -51,6 +51,10 @@ namespace Coffee.UIExtensions
         {
             if (!particle) return;
 
+            Profiler.BeginSample("Modify scale");
+            ModifyScale(particle);
+            Profiler.EndSample();
+
             if (!particle.isValid) return;
 
             Profiler.BeginSample("Update trail particle");
@@ -83,6 +87,30 @@ namespace Coffee.UIExtensions
             Profiler.BeginSample("Update Animatable Material Properties");
             UpdateAnimatableMaterialProperties(particle);
             Profiler.EndSample();
+        }
+
+        private static void ModifyScale(UIParticle particle)
+        {
+            if (particle.isTrailParticle) return;
+
+            var modifiedScale = particle.m_Scale3D;
+
+            // Ignore Canvas scaling.
+            if (particle.ignoreCanvasScaler && particle.canvas)
+            {
+                var s = particle.canvas.rootCanvas.transform.localScale;
+                var sInv = new Vector3(
+                    Mathf.Approximately(s.x, 0) ? 1 : 1 / s.x,
+                    Mathf.Approximately(s.y, 0) ? 1 : 1 / s.y,
+                    Mathf.Approximately(s.z, 0) ? 1 : 1 / s.z);
+                modifiedScale = Vector3.Scale(modifiedScale, sInv);
+            }
+
+            // Scale is already modified.
+            var tr = particle.transform;
+            if (Mathf.Approximately((tr.localScale - modifiedScale).sqrMagnitude, 0)) return;
+
+            tr.localScale = modifiedScale;
         }
 
         private static void UpdateMeshAndTexture(UIParticle particle)

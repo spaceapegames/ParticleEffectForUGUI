@@ -1,12 +1,13 @@
-#if !UNITY_2019_1_OR_NEWER
 using System.IO;
 using System.Text.RegularExpressions;
 using UnityEditor;
+using UnityEngine;
 
 namespace Coffee.UIExtensions
 {
     public class UIParticleMenu
     {
+#if !UNITY_2019_1_OR_NEWER
         static string GetPreviousSamplePath(string displayName, string sampleName)
         {
             string sampleRoot = $"Assets/Samples/{displayName}";
@@ -55,6 +56,45 @@ namespace Coffee.UIExtensions
         {
             ImportSample("com.coffee.ui-particle", "Demo");
         }
+#endif
+
+
+        [MenuItem("GameObject/UI/Particle System", false, 2019)]
+        public static void AddParticle(MenuCommand menuCommand)
+        {
+            // Create UI element.
+            EditorApplication.ExecuteMenuItem("GameObject/UI/Image");
+            var ui = Selection.activeGameObject;
+
+            // Create ParticleSystem.
+            EditorApplication.ExecuteMenuItem("GameObject/Effects/Particle System");
+            var ps = Selection.activeGameObject;
+            var transform = ps.transform;
+            var localRotation = transform.localRotation;
+
+            transform.SetParent(ui.transform.parent, true);
+            var pos = transform.localPosition;
+            pos.z = 0;
+            ps.transform.localPosition = pos;
+            ps.transform.localRotation = localRotation;
+
+            // Destroy UI elemant
+            Object.DestroyImmediate(ui);
+
+            // Assign default material.
+            var renderer = ps.GetComponent<ParticleSystemRenderer>();
+            var defaultMat = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Particle.mat");
+            renderer.material = defaultMat ? defaultMat : renderer.material;
+
+            // Set to hierarchy mode
+            var particleSystem = ps.GetComponent<ParticleSystem>();
+            var main = particleSystem.main;
+            main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+
+            // Add UIParticle.
+            var uiParticle = ps.AddComponent<UIParticle>();
+            uiParticle.ignoreCanvasScaler = true;
+            uiParticle.scale = 10;
+        }
     }
 }
-#endif

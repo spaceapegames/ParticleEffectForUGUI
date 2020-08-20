@@ -118,11 +118,8 @@ namespace Coffee.UIExtensions
             switch (space)
             {
                 case ParticleSystemSimulationSpace.Local:
-                    var canvasTr = particle.canvas.rootCanvas.transform;
-                    return Matrix4x4.Rotate(transform.localRotation).inverse
-                           * Matrix4x4.Rotate(canvasTr.localRotation).inverse
-                           * Matrix4x4.Scale(transform.localScale).inverse
-                           * Matrix4x4.Scale(canvasTr.localScale).inverse;
+                    return Matrix4x4.Rotate(transform.rotation).inverse
+                           * Matrix4x4.Scale(transform.lossyScale).inverse;
                 case ParticleSystemSimulationSpace.World:
                     return transform.worldToLocalMatrix;
                 case ParticleSystemSimulationSpace.Custom:

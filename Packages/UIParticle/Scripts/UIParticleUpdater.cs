@@ -57,10 +57,6 @@ namespace Coffee.UIExtensions
 
             if (!particle.isValid) return;
 
-            Profiler.BeginSample("Update trail particle");
-            particle.UpdateTrailParticle();
-            Profiler.EndSample();
-
             Profiler.BeginSample("Check materials");
             particle.CheckMaterials();
             Profiler.EndSample();
@@ -80,8 +76,8 @@ namespace Coffee.UIExtensions
                 Profiler.EndSample();
             }
 
-            Profiler.BeginSample("Set mesh and texture to CanvasRenderer");
-            UpdateMeshAndTexture(particle);
+            Profiler.BeginSample("Set mesh to CanvasRenderer");
+            particle.canvasRenderer.SetMesh(particle.bakedMesh);
             Profiler.EndSample();
 
             Profiler.BeginSample("Update Animatable Material Properties");
@@ -91,8 +87,6 @@ namespace Coffee.UIExtensions
 
         private static void ModifyScale(UIParticle particle)
         {
-            if (particle.isTrailParticle) return;
-
             var modifiedScale = particle.m_Scale3D;
 
             // Ignore Canvas scaling.
@@ -113,44 +107,9 @@ namespace Coffee.UIExtensions
             tr.localScale = modifiedScale;
         }
 
-        private static void UpdateMeshAndTexture(UIParticle particle)
-        {
-            // Update mesh.
-            particle.canvasRenderer.SetMesh(particle.bakedMesh);
-
-            // Non sprite mode: external texture is not used.
-            if (!particle.isSpritesMode || particle.isTrailParticle)
-            {
-                particle.canvasRenderer.SetTexture(null);
-                return;
-            }
-
-            // Sprite mode: get sprite's texture.
-            Texture tex = null;
-            Profiler.BeginSample("Check TextureSheetAnimation module");
-            var tsaModule = particle.cachedParticleSystem.textureSheetAnimation;
-            if (tsaModule.enabled && tsaModule.mode == ParticleSystemAnimationMode.Sprites)
-            {
-                var count = tsaModule.spriteCount;
-                for (var i = 0; i < count; i++)
-                {
-                    var sprite = tsaModule.GetSprite(i);
-                    if (!sprite) continue;
-
-                    tex = sprite.GetActualTexture();
-                    break;
-                }
-            }
-
-            Profiler.EndSample();
-
-            particle.canvasRenderer.SetTexture(tex);
-        }
-
         private static Matrix4x4 GetScaledMatrix(UIParticle particle)
         {
             var transform = particle.transform;
-            var tr = particle.isTrailParticle ? transform.parent : transform;
             var main = particle.mainModule;
             var space = main.simulationSpace;
             if (space == ParticleSystemSimulationSpace.Custom && !main.customSimulationSpace)
@@ -160,9 +119,9 @@ namespace Coffee.UIExtensions
             {
                 case ParticleSystemSimulationSpace.Local:
                     var canvasTr = particle.canvas.rootCanvas.transform;
-                    return Matrix4x4.Rotate(tr.localRotation).inverse
+                    return Matrix4x4.Rotate(transform.localRotation).inverse
                            * Matrix4x4.Rotate(canvasTr.localRotation).inverse
-                           * Matrix4x4.Scale(tr.localScale).inverse
+                           * Matrix4x4.Scale(transform.localScale).inverse
                            * Matrix4x4.Scale(canvasTr.localScale).inverse;
                 case ParticleSystemSimulationSpace.World:
                     return transform.worldToLocalMatrix;
@@ -190,25 +149,11 @@ namespace Coffee.UIExtensions
             var trail = particle.trailModule;
 
             Profiler.BeginSample("Bake mesh");
-            if (!particle.isSpritesMode) // Non sprite mode: bake main particle and trail particle.
-            {
-                if (CanBakeMesh(renderer))
-                    renderer.BakeMesh(MeshHelper.GetTemporaryMesh(), cam, true);
+            if (CanBakeMesh(renderer))
+                renderer.BakeMesh(MeshHelper.GetTemporaryMesh(), cam, true);
 
-                if (trail.enabled)
-                    renderer.BakeTrailsMesh(MeshHelper.GetTemporaryMesh(), cam, true);
-            }
-            else if (particle.isTrailParticle) // Sprite mode (trail): bake trail particle.
-            {
-                if (trail.enabled)
-                    renderer.BakeTrailsMesh(MeshHelper.GetTemporaryMesh(), cam, true);
-            }
-            else // Sprite mode (main): bake main particle.
-            {
-                if (CanBakeMesh(renderer))
-                    renderer.BakeMesh(MeshHelper.GetTemporaryMesh(), cam, true);
-            }
-
+            if (trail.enabled)
+                renderer.BakeTrailsMesh(MeshHelper.GetTemporaryMesh(), cam, true);
             Profiler.EndSample();
 
             Profiler.BeginSample("Apply matrix to position");

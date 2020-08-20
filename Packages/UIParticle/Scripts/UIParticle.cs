@@ -17,9 +17,6 @@ namespace Coffee.UIExtensions
         [Tooltip("The ParticleSystem rendered by CanvasRenderer")] [SerializeField]
         ParticleSystem m_ParticleSystem;
 
-        [Tooltip("The UIParticle to render trail effect")] [SerializeField]
-        internal UIParticle m_TrailParticle;
-
         [HideInInspector] [SerializeField] bool m_IsTrail = false;
 
         [Tooltip("Ignore canvas scaler")] [SerializeField]
@@ -43,7 +40,7 @@ namespace Coffee.UIExtensions
         private ParticleSystemRenderer _renderer;
         private int _cachedSharedMaterialId;
         private int _cachedTrailMaterialId;
-        private bool _cachedSpritesModeAndHasTrail;
+        private bool _cachedSpritesMode;
 
         //################################
         // Public/Protected Members.
@@ -97,21 +94,6 @@ namespace Coffee.UIExtensions
             set { m_Scale3D = value; }
         }
 
-        internal bool isTrailParticle
-        {
-            get { return m_IsTrail; }
-        }
-
-        internal bool isSpritesMode
-        {
-            get { return textureSheetAnimationModule.enabled && textureSheetAnimationModule.mode == ParticleSystemAnimationMode.Sprites; }
-        }
-
-        private bool isSpritesModeAndHasTrail
-        {
-            get { return isSpritesMode && trailModule.enabled; }
-        }
-
         private ParticleSystem.TextureSheetAnimationModule textureSheetAnimationModule
         {
             get { return cachedParticleSystem.textureSheetAnimation; }
@@ -141,32 +123,31 @@ namespace Coffee.UIExtensions
         {
             if (!_renderer) return;
 
-            if (!isSpritesMode) // Non sprite mode: canvas renderer has main and trail materials.
+            canvasRenderer.materialCount = trailModule.enabled ? 2 : 1;
+
+            // Regenerate main material.
+            var mainMat = _renderer.sharedMaterial;
+            var hasAnimatableProperties = 0 < m_AnimatableProperties.Length;
+            var tex = GetTextureForSprite(cachedParticleSystem);
+            if (hasAnimatableProperties || tex)
             {
-                canvasRenderer.materialCount = trailModule.enabled ? 2 : 1;
-                canvasRenderer.SetMaterial(GetModifiedMaterial(_renderer.sharedMaterial, 0), 0);
-                if (trailModule.enabled)
-                    canvasRenderer.SetMaterial(GetModifiedMaterial(_renderer.trailMaterial, 1), 1);
+                mainMat = new Material(mainMat);
+                if (tex)
+                {
+                    mainMat.mainTexture = tex;
+                }
             }
-            else if (isTrailParticle) // Sprite mode (Trail): canvas renderer has trail material.
-            {
-                canvasRenderer.materialCount = 1;
-                canvasRenderer.SetMaterial(GetModifiedMaterial(_renderer.trailMaterial, 0), 0);
-            }
-            else // Sprite mode (Main): canvas renderer has main material.
-            {
-                canvasRenderer.materialCount = 1;
-                canvasRenderer.SetMaterial(GetModifiedMaterial(_renderer.sharedMaterial, 0), 0);
-            }
+
+            canvasRenderer.SetMaterial(GetModifiedMaterial(mainMat, 0), 0);
+
+            // Trail material
+            if (trailModule.enabled)
+                canvasRenderer.SetMaterial(GetModifiedMaterial(_renderer.trailMaterial, 1), 1);
         }
 
         private Material GetModifiedMaterial(Material baseMaterial, int index)
         {
-            if (!baseMaterial || 1 < index || !isActiveAndEnabled) return null;
-
-            var hasAnimatableProperties = 0 < m_AnimatableProperties.Length && index == 0;
-            if (hasAnimatableProperties || isTrailParticle)
-                baseMaterial = new Material(baseMaterial);
+            if (!baseMaterial || 1 < index || !isActiveAndEnabled) return baseMaterial;
 
             var baseMat = baseMaterial;
             if (m_ShouldRecalculateStencil)
@@ -196,11 +177,41 @@ namespace Coffee.UIExtensions
             return baseMat;
         }
 
+
+        private static Texture2D GetTextureForSprite(ParticleSystem particle)
+        {
+            if (!particle) return null;
+
+            // Get sprite's texture.
+            var tsaModule = particle.textureSheetAnimation;
+            if (!tsaModule.enabled || tsaModule.mode != ParticleSystemAnimationMode.Sprites) return null;
+
+            for (var i = 0; i < tsaModule.spriteCount; i++)
+            {
+                var sprite = tsaModule.GetSprite(i);
+                if (!sprite) continue;
+
+                return sprite.GetActualTexture();
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// This function is called when the object becomes enabled and active.
         /// </summary>
         protected override void OnEnable()
         {
+            if (m_IsTrail)
+            {
+                gameObject.SetActive(false);
+                if (Application.isPlaying)
+                    Destroy(gameObject);
+                else
+                    DestroyImmediate(gameObject);
+                return;
+            }
+
             UpdateVersionIfNeeded();
 
             _tracker.Add(this, rectTransform, DrivenTransformProperties.Scale);
@@ -282,49 +293,15 @@ namespace Coffee.UIExtensions
             return current != old;
         }
 
-        internal void UpdateTrailParticle()
-        {
-            // Should have a UIParticle for trail particle?
-            if (isActiveAndEnabled && isValid && !isTrailParticle && isSpritesModeAndHasTrail)
-            {
-                if (!m_TrailParticle)
-                {
-                    // Create new UIParticle for trail particle
-                    m_TrailParticle = new GameObject("[UIParticle] Trail").AddComponent<UIParticle>();
-                    var trans = m_TrailParticle.transform;
-                    trans.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-                    trans.localScale = Vector3.one;
-                    trans.SetParent(transform, false);
-
-                    m_TrailParticle._renderer = _renderer;
-                    m_TrailParticle.m_ParticleSystem = m_ParticleSystem;
-                    m_TrailParticle.m_IsTrail = true;
-                }
-
-                m_TrailParticle.gameObject.hideFlags = HideFlags.DontSave;
-            }
-            else if (m_TrailParticle)
-            {
-                // Destroy a UIParticle for trail particle.
-#if UNITY_EDITOR
-                if (!Application.isPlaying)
-                    DestroyImmediate(m_TrailParticle.gameObject);
-                else
-#endif
-                    Destroy(m_TrailParticle.gameObject);
-
-                m_TrailParticle = null;
-            }
-        }
-
         internal void CheckMaterials()
         {
             if (!_renderer) return;
 
             var matChanged = HasMaterialChanged(_renderer.sharedMaterial, ref _cachedSharedMaterialId);
             var matChanged2 = HasMaterialChanged(_renderer.trailMaterial, ref _cachedTrailMaterialId);
-            var modeChanged = _cachedSpritesModeAndHasTrail != isSpritesModeAndHasTrail;
-            _cachedSpritesModeAndHasTrail = isSpritesModeAndHasTrail;
+            var isSpritesMode = textureSheetAnimationModule.enabled && textureSheetAnimationModule.mode == ParticleSystemAnimationMode.Sprites;
+            var modeChanged = _cachedSpritesMode != isSpritesMode;
+            _cachedSpritesMode = isSpritesMode;
 
             if (matChanged || matChanged2 || modeChanged)
                 SetMaterialDirty();

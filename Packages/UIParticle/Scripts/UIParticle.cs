@@ -1,6 +1,11 @@
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
+
+[assembly: InternalsVisibleTo("Coffee.UIParticle.Editor")]
 
 namespace Coffee.UIExtensions
 {
@@ -8,66 +13,41 @@ namespace Coffee.UIExtensions
     /// Render maskable and sortable particle effect ,without Camera, RenderTexture or Canvas.
     /// </summary>
     [ExecuteInEditMode]
+    [RequireComponent(typeof(RectTransform))]
     [RequireComponent(typeof(CanvasRenderer))]
     public class UIParticle : MaskableGraphic
     {
-        //################################
-        // Serialize Members.
-        //################################
-        [Tooltip("The ParticleSystem rendered by CanvasRenderer")] [SerializeField]
-        ParticleSystem m_ParticleSystem;
-
         [HideInInspector] [SerializeField] bool m_IsTrail = false;
 
-        [Tooltip("Ignore canvas scaler")] [SerializeField]
-        bool m_IgnoreCanvasScaler = false;
-
-        [Tooltip("Ignore parent scale")] [SerializeField]
-        bool m_IgnoreParent = false;
+        [Tooltip("Ignore canvas scaler")] [SerializeField] [FormerlySerializedAs("m_IgnoreParent")]
+        bool m_IgnoreCanvasScaler = true;
 
         [Tooltip("Particle effect scale")] [SerializeField]
-        float m_Scale = 0;
+        float m_Scale = 100;
 
         [Tooltip("Animatable material properties. If you want to change the material properties of the ParticleSystem in Animation, enable it.")] [SerializeField]
         internal AnimatableProperty[] m_AnimatableProperties = new AnimatableProperty[0];
 
         [Tooltip("Particle effect scale")] [SerializeField]
         internal Vector3 m_Scale3D = Vector3.one;
+        [Tooltip("Particles")] [SerializeField]
+        private List<ParticleSystem> m_Particles = new List<ParticleSystem>();
 
-        private readonly Material[] _maskMaterials = new Material[2];
         private DrivenRectTransformTracker _tracker;
         private Mesh _bakedMesh;
-        private ParticleSystemRenderer _renderer;
-        private int _cachedSharedMaterialId;
-        private int _cachedTrailMaterialId;
-        private bool _cachedSpritesMode;
+        private readonly List<Material> _modifiedMaterials = new List<Material>();
+        private uint _activeMeshIndices;
+        private Vector3 _cachedPosition;
+        private static readonly List<Material> s_TempMaterials = new List<Material>(2);
 
-        //################################
-        // Public/Protected Members.
-        //################################
+
         /// <summary>
         /// Should this graphic be considered a target for raycasting?
         /// </summary>
         public override bool raycastTarget
         {
             get { return false; }
-            set { base.raycastTarget = value; }
-        }
-
-        /// <summary>
-        /// Cached ParticleSystem.
-        /// </summary>
-        public ParticleSystem cachedParticleSystem
-        {
-            get { return m_ParticleSystem ? m_ParticleSystem : (m_ParticleSystem = GetComponent<ParticleSystem>()); }
-        }
-
-        /// <summary>
-        /// Cached ParticleSystem.
-        /// </summary>
-        internal ParticleSystemRenderer cachedRenderer
-        {
-            get { return _renderer; }
+            set { }
         }
 
         public bool ignoreCanvasScaler
@@ -81,120 +61,128 @@ namespace Coffee.UIExtensions
         /// </summary>
         public float scale
         {
-            get { return m_Scale3D.x; }
-            set { m_Scale3D.Set(value, value, value); }
+            get { return m_Scale; }
+            set { m_Scale = Mathf.Max(0.001f, value); }
         }
 
-        /// <summary>
-        /// Particle effect scale.
-        /// </summary>
-        public Vector3 scale3D
-        {
-            get { return m_Scale3D; }
-            set { m_Scale3D = value; }
-        }
-
-        private ParticleSystem.TextureSheetAnimationModule textureSheetAnimationModule
-        {
-            get { return cachedParticleSystem.textureSheetAnimation; }
-        }
-
-        internal ParticleSystem.TrailModule trailModule
-        {
-            get { return cachedParticleSystem.trails; }
-        }
-
-        internal ParticleSystem.MainModule mainModule
-        {
-            get { return cachedParticleSystem.main; }
-        }
-
-        public bool isValid
-        {
-            get { return m_ParticleSystem && _renderer && canvas; }
-        }
-
-        public Mesh bakedMesh
+        internal Mesh bakedMesh
         {
             get { return _bakedMesh; }
         }
 
+        public List<ParticleSystem> particles
+        {
+            get { return m_Particles; }
+        }
+
+        public IEnumerable<Material> materials
+        {
+            get { return _modifiedMaterials; }
+        }
+
+        internal uint activeMeshIndices
+        {
+            get { return _activeMeshIndices; }
+            set
+            {
+                if (_activeMeshIndices == value) return;
+                _activeMeshIndices = value;
+                UpdateMaterial();
+            }
+        }
+
+        internal Vector3 cachedPosition
+        {
+            get { return _cachedPosition; }
+            set { _cachedPosition = value; }
+        }
+
+        public void RefreshParticles()
+        {
+            GetComponentsInChildren(particles);
+
+            particles.Exec(p => p.GetComponent<ParticleSystemRenderer>().enabled = !enabled);
+            particles.SortForRendering(transform);
+
+            SetMaterialDirty();
+        }
+
         protected override void UpdateMaterial()
         {
-            if (!_renderer) return;
-
-            canvasRenderer.materialCount = trailModule.enabled ? 2 : 1;
-
-            // Regenerate main material.
-            var mainMat = _renderer.sharedMaterial;
-            var hasAnimatableProperties = 0 < m_AnimatableProperties.Length;
-            var tex = GetTextureForSprite(cachedParticleSystem);
-            if (hasAnimatableProperties || tex)
+            // Clear modified materials.
+            for (var i = 0; i < _modifiedMaterials.Count; i++)
             {
-                mainMat = new Material(mainMat);
-                if (tex)
-                {
-                    mainMat.mainTexture = tex;
-                }
+                StencilMaterial.Remove(_modifiedMaterials[i]);
+                DestroyImmediate(_modifiedMaterials[i]);
+                _modifiedMaterials[i] = null;
             }
 
-            canvasRenderer.SetMaterial(GetModifiedMaterial(mainMat, 0), 0);
+            _modifiedMaterials.Clear();
 
-            // Trail material
-            if (trailModule.enabled)
-                canvasRenderer.SetMaterial(GetModifiedMaterial(_renderer.trailMaterial, 1), 1);
-        }
-
-        private Material GetModifiedMaterial(Material baseMaterial, int index)
-        {
-            if (!baseMaterial || 1 < index || !isActiveAndEnabled) return baseMaterial;
-
-            var baseMat = baseMaterial;
+            // Recalculate stencil value.
             if (m_ShouldRecalculateStencil)
             {
+                var rootCanvas = MaskUtilities.FindRootSortOverrideCanvas(transform);
+                m_StencilValue = maskable ? MaskUtilities.GetStencilDepth(transform, rootCanvas) : 0;
                 m_ShouldRecalculateStencil = false;
-
-                if (maskable)
-                {
-                    var sortOverrideCanvas = MaskUtilities.FindRootSortOverrideCanvas(transform);
-                    m_StencilValue = MaskUtilities.GetStencilDepth(transform, sortOverrideCanvas) + index;
-                }
-                else
-                {
-                    m_StencilValue = 0;
-                }
             }
 
-            var component = GetComponent<Mask>();
-            if (m_StencilValue <= 0 || (component != null && component.IsActive())) return baseMat;
+            // No mesh to render.
+            if (activeMeshIndices == 0 || !isActiveAndEnabled || particles.Count == 0)
+            {
+                _activeMeshIndices = 0;
+                canvasRenderer.Clear();
+                return;
+            }
 
-            var stencilId = (1 << m_StencilValue) - 1;
-            var maskMaterial = StencilMaterial.Add(baseMat, stencilId, StencilOp.Keep, CompareFunction.Equal, ColorWriteMask.All, stencilId, 0);
-            StencilMaterial.Remove(_maskMaterials[index]);
-            _maskMaterials[index] = maskMaterial;
-            baseMat = _maskMaterials[index];
+            //
+            var materialCount = Mathf.Max(8, activeMeshIndices.BitCount());
+            canvasRenderer.materialCount = materialCount;
+            var j = 0;
+            for (var i = 0; i < particles.Count; i++)
+            {
+                if (materialCount <= j) break;
+                var ps = particles[i];
+                if (!ps) continue;
 
-            return baseMat;
+                var r = ps.GetComponent<ParticleSystemRenderer>();
+                r.GetSharedMaterials(s_TempMaterials);
+
+                // Main
+                var bit = 1 << (i * 2);
+                if (0 < (activeMeshIndices & bit) && 0 < s_TempMaterials.Count)
+                {
+                    var mat = GetModifiedMaterial(s_TempMaterials[0], ps.GetTextureForSprite());
+                    canvasRenderer.SetMaterial(mat, j++);
+                }
+
+                // Trails
+                if (materialCount <= j) break;
+                bit <<= 1;
+                if (0 < (activeMeshIndices & bit) && 1 < s_TempMaterials.Count)
+                {
+                    var mat = GetModifiedMaterial(s_TempMaterials[1], null);
+                    canvasRenderer.SetMaterial(mat, j++);
+                }
+            }
         }
 
-
-        private static Texture2D GetTextureForSprite(ParticleSystem particle)
+        private Material GetModifiedMaterial(Material baseMaterial, Texture2D texture)
         {
-            if (!particle) return null;
-
-            // Get sprite's texture.
-            var tsaModule = particle.textureSheetAnimation;
-            if (!tsaModule.enabled || tsaModule.mode != ParticleSystemAnimationMode.Sprites) return null;
-
-            for (var i = 0; i < tsaModule.spriteCount; i++)
+            if (0 < m_StencilValue)
             {
-                var sprite = tsaModule.GetSprite(i);
-                if (!sprite) continue;
-
-                return sprite.GetActualTexture();
+                baseMaterial = StencilMaterial.Add(baseMaterial, (1 << m_StencilValue) - 1, StencilOp.Keep, CompareFunction.Equal, ColorWriteMask.All, (1 << m_StencilValue) - 1, 0);
+                _modifiedMaterials.Add(baseMaterial);
             }
 
-            return null;
+            if (texture == null && m_AnimatableProperties.Length == 0) return baseMaterial;
+
+            baseMaterial = new Material(baseMaterial);
+            _modifiedMaterials.Add(baseMaterial);
+            if (texture)
+                baseMaterial.mainTexture = texture;
+
+            return baseMaterial;
         }
 
         /// <summary>
@@ -202,26 +190,14 @@ namespace Coffee.UIExtensions
         /// </summary>
         protected override void OnEnable()
         {
-            if (m_IsTrail)
-            {
-                gameObject.SetActive(false);
-                if (Application.isPlaying)
-                    Destroy(gameObject);
-                else
-                    DestroyImmediate(gameObject);
-                return;
-            }
+            InitializeIfNeeded();
 
-            UpdateVersionIfNeeded();
+            _cachedPosition = transform.localPosition;
+            _activeMeshIndices = 0;
 
+            UIParticleUpdater.Register(this);
+            particles.Exec(p => p.GetComponent<ParticleSystemRenderer>().enabled = false);
             _tracker.Add(this, rectTransform, DrivenTransformProperties.Scale);
-
-            // Initialize.
-            _renderer = cachedParticleSystem ? cachedParticleSystem.GetComponent<ParticleSystemRenderer>() : null;
-            if (_renderer != null)
-                _renderer.enabled = false;
-
-            CheckMaterials();
 
             // Create objects.
             _bakedMesh = new Mesh();
@@ -229,8 +205,6 @@ namespace Coffee.UIExtensions
 
             MeshHelper.Register();
             BakingCamera.Register();
-            UIParticleUpdater.Register(this);
-
             base.OnEnable();
         }
 
@@ -239,6 +213,8 @@ namespace Coffee.UIExtensions
         /// </summary>
         protected override void OnDisable()
         {
+            UIParticleUpdater.Unregister(this);
+            particles.Exec(p => p.GetComponent<ParticleSystemRenderer>().enabled = true);
             _tracker.Clear();
 
             // Destroy object.
@@ -247,17 +223,6 @@ namespace Coffee.UIExtensions
 
             MeshHelper.Unregister();
             BakingCamera.Unregister();
-            UIParticleUpdater.Unregister(this);
-
-            CheckMaterials();
-
-            // Remove mask materials.
-            for (var i = 0; i < _maskMaterials.Length; i++)
-            {
-                StencilMaterial.Remove(_maskMaterials[i]);
-                _maskMaterials[i] = null;
-            }
-
             base.OnDisable();
         }
 
@@ -282,41 +247,28 @@ namespace Coffee.UIExtensions
         {
         }
 
-
-        //################################
-        // Private Members.
-        //################################
-        private static bool HasMaterialChanged(Material material, ref int current)
+        private void InitializeIfNeeded()
         {
-            var old = current;
-            current = material ? material.GetInstanceID() : 0;
-            return current != old;
-        }
+            if (0 < particles.Count) return;
 
-        internal void CheckMaterials()
-        {
-            if (!_renderer) return;
+            if (m_IsTrail
+                || transform.parent && transform.parent.GetComponentInParent<UIParticle>())
+            {
+                gameObject.SetActive(false);
+                if (Application.isPlaying)
+                    Destroy(gameObject);
+                else
+                    DestroyImmediate(gameObject);
+                return;
+            }
 
-            var matChanged = HasMaterialChanged(_renderer.sharedMaterial, ref _cachedSharedMaterialId);
-            var matChanged2 = HasMaterialChanged(_renderer.trailMaterial, ref _cachedTrailMaterialId);
-            var isSpritesMode = textureSheetAnimationModule.enabled && textureSheetAnimationModule.mode == ParticleSystemAnimationMode.Sprites;
-            var modeChanged = _cachedSpritesMode != isSpritesMode;
-            _cachedSpritesMode = isSpritesMode;
-
-            if (matChanged || matChanged2 || modeChanged)
-                SetMaterialDirty();
-        }
-
-        private void UpdateVersionIfNeeded()
-        {
-            if (Mathf.Approximately(m_Scale, 0)) return;
-
-            var parent = GetComponentInParent<UIParticle>();
-            if (m_IgnoreParent || !parent)
-                scale3D = m_Scale * transform.localScale;
+            // refresh.
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+                UnityEditor.EditorApplication.delayCall += RefreshParticles;
             else
-                scale3D = transform.localScale;
-            m_Scale = 0;
+#endif
+                RefreshParticles();
         }
     }
 }

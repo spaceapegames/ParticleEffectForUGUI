@@ -16,7 +16,6 @@ namespace Coffee.UIExtensions
         //################################
         private static readonly GUIContent s_ContentAdvancedOptions = new GUIContent("Advanced Options");
 
-        private SerializedProperty _spScale3D;
         private SerializedProperty _spScale;
         private SerializedProperty _spIgnoreCanvasScaler;
         private SerializedProperty _spAnimatableProperties;
@@ -42,7 +41,6 @@ namespace Coffee.UIExtensions
         protected override void OnEnable()
         {
             base.OnEnable();
-            _spScale3D = serializedObject.FindProperty("m_Scale3D");
             _spScale = serializedObject.FindProperty("m_Scale");
             _spIgnoreCanvasScaler = serializedObject.FindProperty("m_IgnoreCanvasScaler");
             _spAnimatableProperties = serializedObject.FindProperty("m_AnimatableProperties");
@@ -62,7 +60,6 @@ namespace Coffee.UIExtensions
             EditorGUILayout.Space();
             EditorGUILayout.LabelField(s_ContentAdvancedOptions, EditorStyles.boldLabel);
 
-            _xyzMode = DrawFloatOrVector3Field(_spScale3D, _xyzMode);
             // IgnoreCanvasScaler
             EditorGUILayout.PropertyField(_spIgnoreCanvasScaler);
 

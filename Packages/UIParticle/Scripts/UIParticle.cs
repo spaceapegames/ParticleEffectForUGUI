@@ -28,8 +28,6 @@ namespace Coffee.UIExtensions
         [Tooltip("Animatable material properties. If you want to change the material properties of the ParticleSystem in Animation, enable it.")] [SerializeField]
         internal AnimatableProperty[] m_AnimatableProperties = new AnimatableProperty[0];
 
-        [Tooltip("Particle effect scale")] [SerializeField]
-        internal Vector3 m_Scale3D = Vector3.one;
         [Tooltip("Particles")] [SerializeField]
         private List<ParticleSystem> m_Particles = new List<ParticleSystem>();
 

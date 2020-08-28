@@ -19,6 +19,8 @@ namespace Coffee.UIExtensions
         private SerializedProperty _spScale;
         private SerializedProperty _spIgnoreCanvasScaler;
         private SerializedProperty _spAnimatableProperties;
+
+        private ReorderableList _ro;
         private bool _xyzMode;
 
         private static readonly List<string> s_MaskablePropertyNames = new List<string>
@@ -44,6 +46,27 @@ namespace Coffee.UIExtensions
             _spScale = serializedObject.FindProperty("m_Scale");
             _spIgnoreCanvasScaler = serializedObject.FindProperty("m_IgnoreCanvasScaler");
             _spAnimatableProperties = serializedObject.FindProperty("m_AnimatableProperties");
+
+            var sp = serializedObject.FindProperty("m_Particles");
+            _ro = new ReorderableList(sp.serializedObject, sp, true, true, false, false);
+            _ro.elementHeight = EditorGUIUtility.singleLineHeight + 4;
+            _ro.drawElementCallback = (rect, index, active, focused) =>
+            {
+                rect.y += 1;
+                rect.height = EditorGUIUtility.singleLineHeight;
+                EditorGUI.PropertyField(rect, sp.GetArrayElementAtIndex(index), GUIContent.none);
+            };
+            _ro.drawHeaderCallback += rect =>
+            {
+                EditorGUI.LabelField(new Rect(rect.x, rect.y, 150, rect.height), "Rendering Order");
+
+                if (!GUI.Button(new Rect(rect.width - 80, rect.y - 1, 80, rect.height), "Reset", EditorStyles.miniButton)) return;
+
+                foreach (UIParticle t in targets)
+                {
+                    t.RefreshParticles();
+                }
+            };
         }
 
         /// <summary>
@@ -69,6 +92,7 @@ namespace Coffee.UIExtensions
             // AnimatableProperties
             AnimatedPropertiesEditor.DrawAnimatableProperties(_spAnimatableProperties, current.material);
 
+            _ro.DoLayoutList();
 
             // Does the shader support UI masks?
             if (current.maskable && current.GetComponentInParent<Mask>())

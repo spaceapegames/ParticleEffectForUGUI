@@ -201,8 +201,6 @@ namespace Coffee.UIExtensions
             _bakedMesh = new Mesh();
             _bakedMesh.MarkDynamic();
 
-            MeshHelper.Register();
-            BakingCamera.Register();
             base.OnEnable();
         }
 
@@ -219,8 +217,6 @@ namespace Coffee.UIExtensions
             DestroyImmediate(_bakedMesh);
             _bakedMesh = null;
 
-            MeshHelper.Unregister();
-            BakingCamera.Unregister();
             base.OnDisable();
         }
 

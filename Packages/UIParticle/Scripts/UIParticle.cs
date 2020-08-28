@@ -37,6 +37,7 @@ namespace Coffee.UIExtensions
         private uint _activeMeshIndices;
         private Vector3 _cachedPosition;
         private static readonly List<Material> s_TempMaterials = new List<Material>(2);
+        private static MaterialPropertyBlock s_Mpb;
 
 
         /// <summary>
@@ -173,7 +174,9 @@ namespace Coffee.UIExtensions
                 if (0 < (activeMeshIndices & bit) && 0 < s_TempMaterials.Count)
                 {
                     var mat = GetModifiedMaterial(s_TempMaterials[0], ps.GetTextureForSprite());
-                    canvasRenderer.SetMaterial(mat, j++);
+                    canvasRenderer.SetMaterial(mat, j);
+                    UpdateMaterialProperties(r, j);
+                    j++;
                 }
 
                 // Trails
@@ -203,6 +206,25 @@ namespace Coffee.UIExtensions
                 baseMaterial.mainTexture = texture;
 
             return baseMaterial;
+        }
+
+        internal void UpdateMaterialProperties(Renderer r, int index)
+        {
+            if (m_AnimatableProperties.Length == 0 || canvasRenderer.materialCount <= index) return;
+
+            r.GetPropertyBlock(s_Mpb ?? (s_Mpb = new MaterialPropertyBlock()));
+            if (s_Mpb.isEmpty) return;
+
+            // #41: Copy the value from MaterialPropertyBlock to CanvasRenderer
+            var mat = canvasRenderer.GetMaterial(index);
+            if (!mat) return;
+
+            foreach (var ap in m_AnimatableProperties)
+            {
+                ap.UpdateMaterialProperties(mat, s_Mpb);
+            }
+
+            s_Mpb.Clear();
         }
 
         /// <summary>

@@ -20,6 +20,11 @@
       "displayName": "Demo",
       "description": "UI Particle Demo",
       "path": "Samples~/Demo"
+    },
+    {
+      "displayName": "Cartoon FX & War FX Demo",
+      "description": "Cartoon FX & War FX Demo",
+      "path": "Samples~/Cartoon FX & War FX Demo"
     }
   ]
 }

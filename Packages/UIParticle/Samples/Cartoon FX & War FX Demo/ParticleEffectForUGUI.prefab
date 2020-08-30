@@ -2525,7 +2525,6 @@ MonoBehaviour:
   m_IgnoreCanvasScaler: 1
   m_Scale: 100
   m_AnimatableProperties: []
-  m_Scale3D: {x: 1, y: 1, z: 1}
   m_Particles: []
 --- !u!225 &3859681903619808809
 CanvasGroup:
@@ -4015,7 +4014,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4739479349620117548
 RectTransform:
   m_ObjectHideFlags: 0

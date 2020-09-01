@@ -20,7 +20,7 @@ namespace Coffee.UIExtensions
         , ISerializationCallbackReceiver
 #endif
     {
-        [HideInInspector] [SerializeField] bool m_IsTrail = false;
+        [HideInInspector] [SerializeField] internal bool m_IsTrail = false;
 
         [Tooltip("Ignore canvas scaler")] [SerializeField] [FormerlySerializedAs("m_IgnoreParent")]
         bool m_IgnoreCanvasScaler = true;

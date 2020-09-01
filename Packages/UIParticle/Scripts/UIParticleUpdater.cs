@@ -244,31 +244,5 @@ namespace Coffee.UIExtensions
 
             return true;
         }
-
-        /// <summary>
-        /// Copy the value from MaterialPropertyBlock to CanvasRenderer
-        /// </summary>
-        private static void UpdateAnimatableMaterialProperties(UIParticle particle, ParticleSystemRenderer renderer)
-        {
-#if UNITY_EDITOR
-            if (!Application.isPlaying) return;
-#endif
-            if (0 == particle.m_AnimatableProperties.Length) return;
-            if (0 == particle.canvasRenderer.materialCount) return;
-
-            var mat = particle.canvasRenderer.GetMaterial(0);
-            if (!mat) return;
-
-            // #41: Copy the value from MaterialPropertyBlock to CanvasRenderer
-            if (s_Mpb == null)
-                s_Mpb = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(s_Mpb);
-            foreach (var ap in particle.m_AnimatableProperties)
-            {
-                ap.UpdateMaterialProperties(mat, s_Mpb);
-            }
-
-            s_Mpb.Clear();
-        }
     }
 }

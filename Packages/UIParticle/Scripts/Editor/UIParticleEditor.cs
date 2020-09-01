@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEditor.UI;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditorInternal;
 using UnityEngine.UI;
 
@@ -100,7 +101,12 @@ namespace Coffee.UIExtensions
             EditorGUILayout.PropertyField(_spScale);
 
             // AnimatableProperties
-            AnimatedPropertiesEditor.DrawAnimatableProperties(_spAnimatableProperties, current.material);
+            var mats = current.particles
+                .Where(x => x)
+                .Select(x => x.GetComponent<ParticleSystemRenderer>().sharedMaterial)
+                .Where(x => x)
+                .ToArray();
+            AnimatedPropertiesEditor.DrawAnimatableProperties(_spAnimatableProperties, mats);
 
             _ro.DoLayoutList();
 

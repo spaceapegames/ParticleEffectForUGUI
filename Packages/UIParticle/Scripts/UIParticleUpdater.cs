@@ -18,7 +18,6 @@ namespace Coffee.UIExtensions
             s_ActiveParticles.Add(particle);
 
             MeshHelper.Register();
-            BakingCamera.Register();
         }
 
         public static void Unregister(UIParticle particle)
@@ -27,7 +26,6 @@ namespace Coffee.UIExtensions
             s_ActiveParticles.Remove(particle);
 
             MeshHelper.Unregister();
-            BakingCamera.Unregister();
         }
 
 #if UNITY_EDITOR

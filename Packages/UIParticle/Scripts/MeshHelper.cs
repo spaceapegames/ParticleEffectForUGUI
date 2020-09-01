@@ -11,7 +11,7 @@ namespace Coffee.UIExtensions
         static readonly List<Color32> s_Colors = new List<Color32>();
         private static int s_RefCount;
         private static Matrix4x4 s_Transform;
-        public static uint activeMeshIndices { get; private set; }
+        public static long activeMeshIndices { get; private set; }
 
         public static void Register()
         {

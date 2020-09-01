@@ -30,15 +30,13 @@ namespace Coffee.UIExtensions
 #endif
     }
 
-    internal static class UintExtensions
+    internal static class LongExtensions
     {
-        public static int BitCount(this uint self)
+        public static int BitCount(this long self)
         {
-            self = (self & 0x55555555) + ((self >> 1) & 0x55555555);
-            self = (self & 0x33333333) + ((self >> 2) & 0x33333333);
-            self = (self & 0x0F0F0F0F) + ((self >> 4) & 0x0F0F0F0F);
-            self = (self & 0x00FF00FF) + ((self >> 8) & 0x00FF00FF);
-            return (int) ((self & 0x0000ffff) + (self >> 16));
+            self = self - ((self >> 1) & 0x5555555555555555L);
+            self = (self & 0x3333333333333333L) + ((self >> 2) & 0x3333333333333333L);
+            return (int)(unchecked(((self + (self >> 4)) & 0xF0F0F0F0F0F0F0FL) * 0x101010101010101L) >> 56);
         }
     }
 

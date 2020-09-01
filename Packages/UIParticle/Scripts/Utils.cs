@@ -40,6 +40,22 @@ namespace Coffee.UIExtensions
         }
     }
 
+    internal static class MeshExtensions
+    {
+        static readonly List<Color32> s_Colors = new List<Color32>();
+
+        public static void ModifyColorSpaceToLinear(this Mesh self)
+        {
+            self.GetColors(s_Colors);
+
+            for (var i = 0; i < s_Colors.Count; i++)
+                s_Colors[i] = ((Color) s_Colors[i]).gamma;
+
+            self.SetColors(s_Colors);
+            s_Colors.Clear();
+        }
+    }
+
     internal static class ParticleSystemExtensions
     {
         public static void SortForRendering(this List<ParticleSystem> self, Transform transform)

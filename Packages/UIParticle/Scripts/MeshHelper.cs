@@ -89,16 +89,5 @@ namespace Coffee.UIExtensions
             result.CombineMeshes(s_CombineInstances, false, true);
             result.RecalculateBounds();
         }
-
-        public static void ModifyColorSpaceToLinear(this Mesh self)
-        {
-            self.GetColors(s_Colors);
-
-            for (var i = 0; i < s_Colors.Count; i++)
-                s_Colors[i] = ((Color) s_Colors[i]).gamma;
-
-            self.SetColors(s_Colors);
-            s_Colors.Clear();
-        }
     }
 }

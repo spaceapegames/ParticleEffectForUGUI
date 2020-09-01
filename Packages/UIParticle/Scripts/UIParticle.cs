@@ -34,6 +34,7 @@ namespace Coffee.UIExtensions
         [Tooltip("Particles")] [SerializeField]
         private List<ParticleSystem> m_Particles = new List<ParticleSystem>();
 
+        private bool _shouldBeRemoved;
         private DrivenRectTransformTracker _tracker;
         private Mesh _bakedMesh;
         private readonly List<Material> _modifiedMaterials = new List<Material>();
@@ -244,8 +245,6 @@ namespace Coffee.UIExtensions
         /// </summary>
         protected override void OnEnable()
         {
-            InitializeIfNeeded();
-
             _cachedPosition = transform.localPosition;
             _activeMeshIndices = 0;
 
@@ -258,6 +257,8 @@ namespace Coffee.UIExtensions
             _bakedMesh.MarkDynamic();
 
             base.OnEnable();
+
+            InitializeIfNeeded();
         }
 
         /// <summary>
@@ -266,7 +267,8 @@ namespace Coffee.UIExtensions
         protected override void OnDisable()
         {
             UIParticleUpdater.Unregister(this);
-            particles.Exec(p => p.GetComponent<ParticleSystemRenderer>().enabled = true);
+            if (!_shouldBeRemoved)
+                particles.Exec(p => p.GetComponent<ParticleSystemRenderer>().enabled = true);
             _tracker.Clear();
 
             // Destroy object.
@@ -299,27 +301,24 @@ namespace Coffee.UIExtensions
 
         private void InitializeIfNeeded()
         {
+            if (enabled && m_IsTrail)
+            {
+                UnityEngine.Debug.LogWarningFormat(this, "[UIParticle] The UIParticle component should be removed: {0}\nReason: UIParticle for trails is no longer needed.", name);
+                gameObject.hideFlags = HideFlags.None;
+                _shouldBeRemoved = true;
+                enabled = false;
+                return;
+            }
+            else if (enabled && transform.parent && transform.parent.GetComponentInParent<UIParticle>())
+            {
+                UnityEngine.Debug.LogWarningFormat(this, "[UIParticle] The UIParticle component should be removed: {0}\nReason: The parent UIParticle exists.", name);
+                gameObject.hideFlags = HideFlags.None;
+                _shouldBeRemoved = true;
+                enabled = false;
+                return;
+            }
+
             if (!this || 0 < particles.Count) return;
-
-            if (m_IsTrail)
-            {
-                UnityEngine.Debug.LogWarningFormat("[UIParticle] Remove this UIParticle: {0}\nReason: UIParticle for trails is no longer needed.", name);
-                if (Application.isPlaying)
-                    Destroy(gameObject);
-                else
-                    DestroyImmediate(gameObject);
-                return;
-            }
-
-            if (transform.parent && transform.parent.GetComponentInParent<UIParticle>())
-            {
-                UnityEngine.Debug.LogWarningFormat("[UIParticle] Remove this UIParticle: {0}\nReason: The parent UIParticle exists.", name);
-                if (Application.isPlaying)
-                    Destroy(this);
-                else
-                    DestroyImmediate(this);
-                return;
-            }
 
             m_IgnoreCanvasScaler = true;
 

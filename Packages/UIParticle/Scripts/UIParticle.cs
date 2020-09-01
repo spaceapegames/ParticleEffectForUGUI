@@ -190,7 +190,7 @@ namespace Coffee.UIExtensions
                 r.GetSharedMaterials(s_TempMaterials);
 
                 // Main
-                var bit = (long)1 << (i * 2);
+                var bit = (long) 1 << (i * 2);
                 if (0 < (activeMeshIndices & bit) && 0 < s_TempMaterials.Count)
                 {
                     var mat = GetModifiedMaterial(s_TempMaterials[0], ps.GetTextureForSprite());
@@ -264,8 +264,7 @@ namespace Coffee.UIExtensions
             }
 
             // Create objects.
-            _bakedMesh = new Mesh();
-            _bakedMesh.MarkDynamic();
+            _bakedMesh = MeshPool.Rent();
 
             base.OnEnable();
 
@@ -283,7 +282,7 @@ namespace Coffee.UIExtensions
             _tracker.Clear();
 
             // Destroy object.
-            DestroyImmediate(_bakedMesh);
+            MeshPool.Return(_bakedMesh);
             _bakedMesh = null;
 
             base.OnDisable();

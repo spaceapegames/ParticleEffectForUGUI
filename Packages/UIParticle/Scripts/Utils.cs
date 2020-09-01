@@ -36,7 +36,7 @@ namespace Coffee.UIExtensions
         {
             self = self - ((self >> 1) & 0x5555555555555555L);
             self = (self & 0x3333333333333333L) + ((self >> 2) & 0x3333333333333333L);
-            return (int)(unchecked(((self + (self >> 4)) & 0xF0F0F0F0F0F0F0FL) * 0x101010101010101L) >> 56);
+            return (int) (unchecked(((self + (self >> 4)) & 0xF0F0F0F0F0F0F0FL) * 0x101010101010101L) >> 56);
         }
     }
 
@@ -53,6 +53,97 @@ namespace Coffee.UIExtensions
 
             self.SetColors(s_Colors);
             s_Colors.Clear();
+        }
+
+        public static void Clear(this CombineInstance[] self)
+        {
+            for (var i = 0; i < self.Length; i++)
+            {
+                MeshPool.Return(self[i].mesh);
+                self[i].mesh = null;
+            }
+        }
+    }
+
+    internal static class MeshPool
+    {
+        private static readonly Stack<Mesh> s_Pool = new Stack<Mesh>();
+
+        public static void Init()
+        {
+        }
+
+        static MeshPool()
+        {
+            for (var i = 0; i < 32; i++)
+            {
+                var m = new Mesh();
+                m.MarkDynamic();
+                s_Pool.Push(m);
+            }
+        }
+
+        public static Mesh Rent()
+        {
+            Mesh m;
+            while (0 < s_Pool.Count)
+            {
+                m = s_Pool.Pop();
+                if (m) return m;
+            }
+
+            m = new Mesh();
+            m.MarkDynamic();
+            return m;
+        }
+
+        public static void Return(Mesh mesh)
+        {
+            if (!mesh || s_Pool.Contains(mesh)) return;
+            mesh.Clear(false);
+            s_Pool.Push(mesh);
+        }
+    }
+
+    internal static class CombineInstanceArrayPool
+    {
+        private static readonly List<CombineInstance[]> s_Pool;
+
+        public static void Init()
+        {
+        }
+
+        static CombineInstanceArrayPool()
+        {
+            s_Pool = new List<CombineInstance[]>(32);
+            for (var i = 0; i < 32; i++)
+            {
+                s_Pool.Add(new CombineInstance[i]);
+            }
+        }
+
+        public static CombineInstance[] Get(List<CombineInstance> src)
+        {
+            var dst = s_Pool[src.Count];
+            for (var i = 0; i < src.Count; i++)
+            {
+                dst[i].mesh = src[i].mesh;
+                dst[i].transform = src[i].transform;
+            }
+
+            return dst;
+        }
+
+        public static CombineInstance[] Get(List<CombineInstanceEx> src, int count)
+        {
+            var dst = s_Pool[count];
+            for (var i = 0; i < count; i++)
+            {
+                dst[i].mesh = src[i].mesh;
+                dst[i].transform = src[i].transform;
+            }
+
+            return dst;
         }
     }
 
@@ -80,6 +171,19 @@ namespace Coffee.UIExtensions
             });
         }
 
+        public static long GetMaterialHash(this ParticleSystem self, bool trail)
+        {
+            if (!self) return 0;
+
+            var r = self.GetComponent<ParticleSystemRenderer>();
+            var mat = trail ? r.trailMaterial : r.sharedMaterial;
+
+            if (!mat) return 0;
+
+            var tex = self.GetTextureForSprite();
+            return ((long) mat.GetHashCode() << 32) + (tex ? tex.GetHashCode() : 0);
+        }
+
         public static Texture2D GetTextureForSprite(this ParticleSystem self)
         {
             if (!self) return null;
@@ -105,5 +209,4 @@ namespace Coffee.UIExtensions
             self.ForEach(action);
         }
     }
-
 }

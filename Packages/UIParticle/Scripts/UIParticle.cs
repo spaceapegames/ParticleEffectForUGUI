@@ -57,7 +57,14 @@ namespace Coffee.UIExtensions
         public bool ignoreCanvasScaler
         {
             get { return m_IgnoreCanvasScaler; }
-            set { m_IgnoreCanvasScaler = value; }
+            set
+            {
+                // if (m_IgnoreCanvasScaler == value) return;
+                m_IgnoreCanvasScaler = value;
+                _tracker.Clear();
+                if (isActiveAndEnabled && m_IgnoreCanvasScaler)
+                    _tracker.Add(this, rectTransform, DrivenTransformProperties.Scale);
+            }
         }
 
         /// <summary>
@@ -250,7 +257,11 @@ namespace Coffee.UIExtensions
 
             UIParticleUpdater.Register(this);
             particles.Exec(p => p.GetComponent<ParticleSystemRenderer>().enabled = false);
-            _tracker.Add(this, rectTransform, DrivenTransformProperties.Scale);
+
+            if (isActiveAndEnabled && m_IgnoreCanvasScaler)
+            {
+                _tracker.Add(this, rectTransform, DrivenTransformProperties.Scale);
+            }
 
             // Create objects.
             _bakedMesh = new Mesh();

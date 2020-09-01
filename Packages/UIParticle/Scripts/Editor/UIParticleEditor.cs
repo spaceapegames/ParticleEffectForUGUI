@@ -81,7 +81,17 @@ namespace Coffee.UIExtensions
             serializedObject.Update();
 
             // IgnoreCanvasScaler
-            EditorGUILayout.PropertyField(_spIgnoreCanvasScaler);
+            using (var ccs = new EditorGUI.ChangeCheckScope())
+            {
+                EditorGUILayout.PropertyField(_spIgnoreCanvasScaler);
+                if (ccs.changed)
+                {
+                    foreach (UIParticle p in targets)
+                    {
+                        p.ignoreCanvasScaler = _spIgnoreCanvasScaler.boolValue;
+                    }
+                }
+            }
 
             // Scale
             EditorGUILayout.PropertyField(_spScale);

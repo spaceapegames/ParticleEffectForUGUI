@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -321,7 +322,7 @@ namespace Coffee.UIExtensions
                 return;
             }
 
-            if (!this || 0 < particles.Count) return;
+            if (!this || particles.Any(x => x)) return;
 
             m_IgnoreCanvasScaler = true;
 

@@ -124,6 +124,43 @@ namespace Coffee.UIExtensions
             particles.Exec(p => p.Stop());
         }
 
+        public void SetParticleSystemInstance(GameObject instance)
+        {
+            SetParticleSystemInstance(instance, true);
+        }
+
+        public void SetParticleSystemInstance(GameObject instance, bool destroy)
+        {
+            if (!instance) return;
+
+            foreach (Transform child in transform)
+            {
+                var go = child.gameObject;
+                go.SetActive(false);
+                if (!destroy) continue;
+
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                    DestroyImmediate(go);
+                else
+#endif
+                    Destroy(go);
+            }
+
+            var tr = instance.transform;
+            tr.SetParent(transform, false);
+            tr.localPosition = Vector3.zero;
+
+            RefreshParticles();
+        }
+
+        public void SetParticleSystemPrefab(GameObject prefab)
+        {
+            if (!prefab) return;
+
+            SetParticleSystemInstance(Instantiate(prefab.gameObject), true);
+        }
+
         public void RefreshParticles()
         {
             GetComponentsInChildren(particles);

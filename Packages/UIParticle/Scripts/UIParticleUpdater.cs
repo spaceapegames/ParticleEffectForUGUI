@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Coffee.UIParticleExtensions;
 using UnityEngine;
 using UnityEngine.Profiling;
 

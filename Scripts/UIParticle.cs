@@ -25,10 +25,10 @@ namespace Coffee.UIExtensions
         [HideInInspector] [SerializeField] internal bool m_IsTrail = false;
 
         [Tooltip("Ignore canvas scaler")] [SerializeField] [FormerlySerializedAs("m_IgnoreParent")]
-        bool m_IgnoreCanvasScaler = true;
+        bool m_IgnoreCanvasScaler = false;
 
         [Tooltip("Particle effect scale")] [SerializeField]
-        float m_Scale = 100;
+        float m_Scale = 1;
 
         [Tooltip("Animatable material properties. If you want to change the material properties of the ParticleSystem in Animation, enable it.")] [SerializeField]
         internal AnimatableProperty[] m_AnimatableProperties = new AnimatableProperty[0];
@@ -394,9 +394,7 @@ namespace Coffee.UIExtensions
             }
 
             if (!this || particles.Any(x => x)) return;
-
-            m_IgnoreCanvasScaler = true;
-
+            
             // refresh.
 #if UNITY_EDITOR
             if (!Application.isPlaying)

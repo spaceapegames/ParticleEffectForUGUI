@@ -196,6 +196,10 @@ namespace Coffee.UIExtensions
                     Profiler.EndSample();
                 }
 
+                // #102: Do not bake particle system to mesh when the alpha is zero.
+                if (Mathf.Approximately( particle.canvasRenderer.GetInheritedAlpha(), 0))
+                    continue;
+
                 // Bake main particles.
                 var r = currentPs.GetComponent<ParticleSystemRenderer>();
                 if (CanBakeMesh(r))
